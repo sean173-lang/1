@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, Minus, RotateCcw, Trophy, Image as ImageIcon, Sun, Moon, Cloud, Wifi, Link as LinkIcon, AlertTriangle } from "lucide-react";
+import { Plus, Minus, RotateCcw, Trophy, Image as ImageIcon, Sun, Moon, Cloud, Link as LinkIcon, AlertTriangle } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
 /**
@@ -260,6 +260,7 @@ export default function HogwartsHousePointsHybrid() {
       console.assert(Object.values(s).reduce((a,b)=>a+b,0) === 10, "Summenberechnung inkorrekt");
       console.assert(sanitizeRoom("  KLasse7A !!!  ") === "klasse7a", "sanitizeRoom fehlgeschlagen");
       console.assert(MAX_HISTORY === 200, "Erwartete History-Länge 200");
+      console.assert(sanitizeRoom("") === "demo", "sanitizeRoom default auf demo erwartet");
     } catch {}
   }, []);
 
@@ -303,7 +304,22 @@ export default function HogwartsHousePointsHybrid() {
                     Hintergrund entfernen
                   </button>
                 )}
-                <input ref={bgRef} type="file" accept="image/*" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; if (f) await onPickBackground(f); e.currentTarget.value = ""; }} />
+                {/* Fix: Event‑Pooling/Null‑Zugriff vermeiden */}
+                <input
+                  ref={bgRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const input = e.currentTarget as HTMLInputElement | null; // capture synchronously
+                    const file = input?.files?.[0] || null;
+                    try {
+                      if (file) await onPickBackground(file);
+                    } finally {
+                      if (input) input.value = ""; // clear safely even after await
+                    }
+                  }}
+                />
               </div>
             </div>
 
